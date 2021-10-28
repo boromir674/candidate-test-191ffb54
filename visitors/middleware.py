@@ -60,7 +60,6 @@ class VisitorSessionMiddleware:
         The first time this middleware runs after a new session is created
         this will push the `request.visitor` info into the session.
         Subsequent requests will then get the data out of the session.
-
         """
         # This will only be true directly after VisitorRequestMiddleware
         # has set the values. All subsequent requests in the session will
@@ -90,21 +89,25 @@ class VisitorSessionMiddleware:
 
 
 class VisitorCountMiddleware:
-
     def __init__(self, get_response: Callable):
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        """[summary]
+        """Deactivate link visitor if maximum number of usages has been reached.
 
-        Args:
-            request (HttpRequest): [description]
+        This middleware should run after the VisitorSessionMiddleware.
 
-        Raises:
-            MiddlewareNotUsed: [description]
+        This middleware is responsible for counting and limiting visitor link
+        usage. It firstly checks whether the request comes from a Visitor
+        (either a new one or a returning one). If not, it passes the request as
+        it is to the next middleware. Then, it increments a counter
+        (request.visitor.usage_count += 1) that measures the number of visits
+        for the link. Finally, it marks the link (visitor) as inactive
+        (request.user.is_visitor = False and request.visitor.is_active = False),
+        if the number of visits has exceeded the maximum number allowed
+        originally and persists any changes to the request.visitor
+        (field 'usage_count' and potentially 'is_active') in the database.
 
-        Returns:
-            HttpResponse: [description]
         """
         # if we are not dealing a new visitor and if we are not dealing with a
         # returning visitor, then pass the request as it is to the next

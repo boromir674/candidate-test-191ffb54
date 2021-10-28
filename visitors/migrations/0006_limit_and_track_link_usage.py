@@ -6,18 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('visitors', '0005_visitorlog_status_code'),
+        ("visitors", "0005_visitorlog_status_code"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='visitor',
-            name='max_usages_allowed',
-            field=models.IntegerField(default=15, help_text='After the link has been used this ammount of times, then it does not provide access anymore.'),
+            model_name="visitor",
+            name="max_usages_allowed",
+            field=models.IntegerField(
+                default=15,
+                help_text="After the link has been used this ammount of times, then it does not provide access anymore.",
+            ),
         ),
         migrations.AddField(
-            model_name='visitor',
-            name='usage_count',
-            field=models.IntegerField(default=0, help_text='How many times a Visitor has used this link.'),
+            model_name="visitor",
+            name="usage_count",
+            field=models.IntegerField(
+                default=0, help_text="How many times a Visitor has used this link."
+            ),
         ),
     ]
