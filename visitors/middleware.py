@@ -116,12 +116,13 @@ class VisitorCountMiddleware:
             return self.get_response(request)
 
         visitor.usage_count += 1
-        visitor.save()
 
         if visitor.max_usages_allowed < visitor.usage_count:
             visitor.is_active = False
-            visitor.save()
             request.user.is_visitor = False
+
+        visitor.save()
+
         return self.get_response(request)
 
 
