@@ -11,7 +11,7 @@ from django.http.request import HttpRequest
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
-from .settings import VISITOR_QUERYSTRING_KEY, VISITOR_TOKEN_EXPIRY
+from .settings import VISITOR_QUERYSTRING_KEY, VISITOR_TOKEN_EXPIRY, DEFAULT_MAX_LINK_USAGES_ALLOWED
 
 
 class InvalidVisitorPass(Exception):
@@ -51,6 +51,12 @@ class Visitor(models.Model):
             "Set to False to disable the visitor link and prevent further access."
         ),
     )
+    max_usages_allowed = models.IntegerField(
+        default=DEFAULT_MAX_LINK_USAGES_ALLOWED, help_text=_lazy(
+            "After the link has been used this ammount of times, then it does "
+            "not provide access anymore."))
+    usage_count = models.IntegerField(default=0, help_text=_lazy(
+        "How many times a Visitor has used this link."))
 
     class Meta:
         verbose_name = "Visitor pass"

@@ -32,6 +32,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "visitors.middleware.VisitorRequestMiddleware",
     "visitors.middleware.VisitorSessionMiddleware",
+    "visitors.middleware.VisitorCountMiddleware",
     "visitors.middleware.VisitorDebugMiddleware",
 ]
 
@@ -82,3 +83,5 @@ ROOT_URLCONF = "tests.urls"
 
 if not DEBUG:
     raise Exception("This settings file can only be used with DEBUG=True")
+
+DEFAULT_MAX_LINK_USAGES_ALLOWED = 15

@@ -2,6 +2,7 @@ import datetime
 import uuid
 
 import pytest
+from django.conf import settings
 from django.utils.timezone import now as tz_now
 
 from visitors.models import InvalidVisitorPass, Visitor
@@ -94,6 +95,8 @@ def test_defaults():
     visitor = Visitor()
     assert visitor.created_at
     assert visitor.expires_at == visitor.created_at + Visitor.DEFAULT_TOKEN_EXPIRY
+    assert visitor.max_usages_allowed == settings.DEFAULT_MAX_LINK_USAGES_ALLOWED
+    assert visitor.usage_count == 0
 
 
 @pytest.mark.parametrize(
