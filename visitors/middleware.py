@@ -89,6 +89,39 @@ class VisitorSessionMiddleware:
         return self.get_response(request)
 
 
+class VisitorCountMiddleware:
+
+    def __init__(self, get_response: Callable):
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        """[summary]
+
+        Args:
+            request (HttpRequest): [description]
+
+        Raises:
+            MiddlewareNotUsed: [description]
+
+        Returns:
+            HttpResponse: [description]
+        """
+        # if we are not dealing a new visitor and if we are not dealing with a
+        # returning visitor, then pass the request as it is to the next
+        # middleware
+        if not (visitor := request.visitor):
+            return self.get_response(request)
+
+        visitor.usage_count += 1
+        visitor.save()
+
+        if visitor.max_usages_allowed < visitor.usage_count:
+            visitor.is_active = False
+            visitor.save()
+            request.user.is_visitor = False
+        return self.get_response(request)
+
+
 class VisitorDebugMiddleware:
     """Print out visitor info - DEBUG only."""
 

@@ -6,7 +6,7 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.http.request import HttpRequest
 from django.test import RequestFactory
 
-from visitors.middleware import VisitorRequestMiddleware, VisitorSessionMiddleware
+from visitors.middleware import VisitorRequestMiddleware, VisitorSessionMiddleware, VisitorCountMiddleware
 from visitors.models import Visitor
 from visitors.settings import VISITOR_SESSION_KEY
 
@@ -14,6 +14,16 @@ from visitors.settings import VISITOR_SESSION_KEY
 @pytest.fixture
 def visitor() -> Visitor:
     return Visitor.objects.create(email="fred@example.com", scope="foo")
+
+
+@pytest.fixture
+def visitor_with_max_usage_reached() -> Visitor:
+    """A Visitor who has reached the maximum allowed uses for the link.
+
+    All subsequent requests made by this Visitor should be denied."""
+    from django.conf import settings
+    return Visitor.objects.create(email="fred@example.com", scope="foo",
+        usage_count=settings.DEFAULT_MAX_LINK_USAGES_ALLOWED)
 
 
 class Session(dict):
@@ -116,3 +126,30 @@ class TestVisitorSessionMiddleware(TestVisitorMiddlewareBase):
         assert not request.user.is_visitor
         assert not request.visitor
         assert not request.session.get(VISITOR_SESSION_KEY)
+
+
+@pytest.mark.django_db
+class TestVisitorCountMiddleware(TestVisitorSessionMiddleware):
+    def test_usage_increment(self, visitor: Visitor) -> None:
+        """Test that a Visitor Link usage counter increments by 1 when a Visitor makes a request"""
+        current_count = visitor.usage_count
+        request = self.request("/", is_visitor=True, visitor=visitor)
+        middleware = VisitorCountMiddleware(lambda r: r)
+        middleware(request)
+        visitor.refresh_from_db()
+        assert visitor.usage_count == current_count + 1
+
+    def test_non_visitor(self) -> None:
+        """Test that the middleware does nothing when it receives a request from a non-visitor."""
+        request = self.request("/", is_visitor=False, visitor=None)
+        middleware = VisitorCountMiddleware(lambda r: r)
+        request_passed_through_middleware = middleware(request)
+        assert request_passed_through_middleware == request
+
+    def test_rejection_at_usage_limit(self, visitor_with_max_usage_reached: Visitor) -> None:
+        request = self.request("/", is_visitor=True, visitor=visitor_with_max_usage_reached)
+        middleware = VisitorCountMiddleware(lambda r: r)
+        middleware(request)
+        visitor_with_max_usage_reached.refresh_from_db()
+        assert visitor_with_max_usage_reached.is_active == False
+        assert request.user.is_visitor == False
